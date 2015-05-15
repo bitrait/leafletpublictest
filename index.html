@@ -149,10 +149,12 @@ function loadGrav() {
 	if (dispState == 0 || rec != 2){
 			for (i in rawData._layers){
 				j = rawData._layers[i]
-				iconOptions = {icon: iMarker, size: iSize};
-				iconOptions.color = window.quantizeGrav(j.feature.properties.GrvDemandWeight);
-				var icon = L.MakiMarkers.icon(iconOptions);
-				L.marker([j._latlng.lat, j._latlng.lng], {icon: icon}).addTo(markers).bindPopup(j.feature.properties.Name+"<br>"+j.feature.properties.GrvDemandWeight);	
+				if (j.feature.properties.GrvDemandWeight > 1){
+					iconOptions = {icon: iMarker, size: iSize};
+					iconOptions.color = window.quantizeGrav(j.feature.properties.GrvDemandWeight);
+					var icon = L.MakiMarkers.icon(iconOptions);
+					L.marker([j._latlng.lat, j._latlng.lng], {icon: icon}).addTo(markers).bindPopup(j.feature.properties.Name+"<br>"+j.feature.properties.GrvDemandWeight);
+				}
 		};
 
 		map.addLayer(markers);
