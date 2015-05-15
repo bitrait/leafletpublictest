@@ -6,23 +6,212 @@
 <style>
   body { margin:0; padding:0; }
   #map { height: 100vh; width: 100vw;}
+
+  #button-wrapper {
+    position: fixed;
+    top: 1vh;
+    left: 23vw;
+}
+
+  .btnStyle {
+    border-radius: 15px;
+    background-color: #4D90FE; 
+    background-image: -moz-linear-gradient(center top , #4D90FE, #4787ED); 
+    border: 1px solid #3079ED; 
+    color: #FFFFFF;
+    padding: 4px;
+    width:17vw;
+}
 </style>
 </head>
 
 <body>
 
-<div id='map'></div>
+
+ <div id="map-wrapper">
+        <div id='map'></div>
+        <div id="button-wrapper">
+            <input type="button" id="rentBtn" value="Rent per Square Foot" onclick="loadRent()" class="btnStyle span3" />
+            <input type="button" id="gravBtn" value="Employment Gravity" onclick="loadGrav()" class="btnStyle span3" /> 
+            <input type="button" id="yearBtn" value="Year Built" onclick="loadYear()" class="btnStyle span3" />
+           
+        </div> 
+ </div>
 
 <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
 <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.3.0"></script>
+<script src="leaflet-omnivore31.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script src="Leaflet.MakiMarkers.js"></script>
 
 <script>
+// I wrote this in one day while learning a lot for the first time; forgive the non-performance and extreme repetition.
 var layer = new L.StamenTileLayer("toner");
 var map = new L.Map("map", {
-    center: new L.LatLng(37.7, -122.4),
-    zoom: 12
+    center: new L.LatLng(37.815, -122.16),
+    zoom: 11
 });
 map.addLayer(layer);
+rawData = omnivore.csv('complexC3cut.csv');
+
+//hues = ["#d53e4f","#f46d43","#fdae61","#fee08b","#ffffbf","#e6f598","#abdda4","#66c2a5","#3288bd"] //red<>teal diverging
+hues = ["#ffffcc","#ffeda0","#fed976","#feb24c","#fd8d3c","#fc4e2a","#e31a1c","#bd0026","#800026"] //cream>red
+hues = hues.reverse();
+//hues = ["#d73027","#f46d43","#fdae61","#fee090","#ffffbf","#e0f3f8","#abd9e9","#74add1","#4575b4"] //red<>ble diverging
+
+var markers = new L.FeatureGroup();
+var dispState = 0;
+var rec = 0;
+iSize = "m";
+iMarker = "circle-stroked"
+
+function loadRent() {
+	if (rec == 0) {
+		window.rent = new Array();
+		window.grav = new Array();
+		window.year = new Array();
+
+		for (i in rawData._layers){
+			j = rawData._layers[i];
+			window.rent.push(j.feature.properties.Average_Rent_sf);
+			window.grav.push(j.feature.properties.GrvDemandWeight);
+			window.year.push(j.feature.properties.Year_Built);
+		}
+		
+		window.quantizeRent = d3.scale.quantize()
+              .domain([Math.min.apply(null, window.rent), Math.max.apply(null, window.rent)])
+              .range(d3.range(9).map(function(i) { return hues[8-i] }));  
+		window.quantizeGrav = d3.scale.quantize()
+              .domain([Math.min.apply(null, window.grav), Math.max.apply(null, window.grav)])
+              .range(d3.range(9).map(function(i) { return hues[8-i] }));		  
+		window.quantizeYear = d3.scale.quantize()
+              .domain([Math.min.apply(null, window.year), Math.max.apply(null, window.year)])
+              .range(d3.range(9).map(function(i) { return hues[8-i] }));
+	}
+	
+	if (dispState == 1){
+		map.removeLayer(markers);
+		for (i in markers._layers){
+			delete markers._layers[i];
+		}
+		setDispState = 0;
+	}
+	
+	if (dispState == 0 || rec != 1){
+			for (i in rawData._layers){
+				j = rawData._layers[i];
+				iconOptions = {icon: iMarker, size: iSize};
+				iconOptions.color = window.quantizeRent(j.feature.properties.Average_Rent_sf);
+				var icon = L.MakiMarkers.icon(iconOptions);
+				L.marker([j._latlng.lat, j._latlng.lng], {icon: icon}).addTo(markers).bindPopup(j.feature.properties.Name+"<br>"+j.feature.properties.Average_Rent_sf);	
+		};
+
+		map.addLayer(markers);
+		setDispState = 1;
+		}
+	
+	dispState = setDispState;
+	rec = 1;
+}
+
+function loadGrav() {
+		if (rec == 0) {
+		window.rent = new Array();
+		window.grav = new Array();
+		window.year = new Array();
+
+		for (i in rawData._layers){
+			j = rawData._layers[i];
+			window.rent.push(j.feature.properties.Average_Rent_sf);
+			window.grav.push(j.feature.properties.GrvDemandWeight);
+			window.year.push(j.feature.properties.Year_Built);
+		}
+		
+		window.quantizeRent = d3.scale.quantize()
+              .domain([Math.min.apply(null, window.rent), Math.max.apply(null, window.rent)])
+              .range(d3.range(9).map(function(i) { return hues[8-i] }));  
+		window.quantizeGrav = d3.scale.quantize()
+              .domain([Math.min.apply(null, window.grav), Math.max.apply(null, window.grav)])
+              .range(d3.range(9).map(function(i) { return hues[8-i] }));		  
+		window.quantizeYear = d3.scale.quantize()
+              .domain([Math.min.apply(null, window.year), Math.max.apply(null, window.year)])
+              .range(d3.range(9).map(function(i) { return hues[8-i] }));
+	}
+	
+	if (dispState == 1){
+		map.removeLayer(markers);
+		for (i in markers._layers){
+			delete markers._layers[i];
+		}
+		setDispState = 0;
+	}
+	
+	if (dispState == 0 || rec != 2){
+			for (i in rawData._layers){
+				j = rawData._layers[i]
+				iconOptions = {icon: iMarker, size: iSize};
+				iconOptions.color = window.quantizeGrav(j.feature.properties.GrvDemandWeight);
+				var icon = L.MakiMarkers.icon(iconOptions);
+				L.marker([j._latlng.lat, j._latlng.lng], {icon: icon}).addTo(markers).bindPopup(j.feature.properties.Name+"<br>"+j.feature.properties.GrvDemandWeight);	
+		};
+
+		map.addLayer(markers);
+		setDispState = 1;
+		}
+	
+	dispState = setDispState;
+	rec = 2;
+}
+
+function loadYear() {
+		if (rec == 0) {
+		window.rent = new Array();
+		window.grav = new Array();
+		window.year = new Array();
+
+		for (i in rawData._layers){
+			j = rawData._layers[i];
+			window.rent.push(j.feature.properties.Average_Rent_sf);
+			window.grav.push(j.feature.properties.GrvDemandWeight);
+			window.year.push(j.feature.properties.Year_Built);
+		}
+		
+		window.quantizeRent = d3.scale.quantize()
+              .domain([Math.min.apply(null, window.rent), Math.max.apply(null, window.rent)])
+              .range(d3.range(9).map(function(i) { return hues[8-i] }));  
+		window.quantizeGrav = d3.scale.quantize()
+              .domain([Math.min.apply(null, window.grav), Math.max.apply(null, window.grav)])
+              .range(d3.range(9).map(function(i) { return hues[8-i] }));		  
+		window.quantizeYear = d3.scale.quantize()
+              .domain([Math.min.apply(null, window.year), Math.max.apply(null, window.year)])
+              .range(d3.range(9).map(function(i) { return hues[8-i] }));
+	}
+	
+	if (dispState == 1){
+		map.removeLayer(markers);
+		for (i in markers._layers){
+			delete markers._layers[i];
+		}
+		setDispState = 0;
+	}
+	
+	if (dispState == 0 || rec != 3){
+			for (i in rawData._layers){
+				j = rawData._layers[i]
+				iconOptions = {icon: iMarker, size: iSize};
+				iconOptions.color = window.quantizeYear(j.feature.properties.Year_Built);
+				var icon = L.MakiMarkers.icon(iconOptions);
+				L.marker([j._latlng.lat, j._latlng.lng], {icon: icon}).addTo(markers).bindPopup(j.feature.properties.Name+"<br>"+j.feature.properties.Year_Built);	
+		};
+
+		map.addLayer(markers);
+		setDispState = 1;
+		}
+	
+	dispState = setDispState;
+	rec = 3;
+}
+
 </script>
 
 </body>
